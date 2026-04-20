@@ -9,14 +9,12 @@ The return shape is intentionally identical to the stub used in the
 claims-triage system:
 
     {
-        "policy_number":  str,
-        "holder_name":    str,
-        "is_active":      bool,
-        "coverage_limit": float,
-        "deductible":     float,
-        "covered_types":  list[str],
-        "start_date":     str,   # "YYYY-MM-DD"
-        "end_date":       str,   # "YYYY-MM-DD"
+        "status":              "success",
+        "policy_number":       str,
+        "is_active":           bool,
+        "coverage_limit":      float,
+        "deductible":          float,
+        "covered_claim_types": list[str],
     }
 
 or ``None`` when the policy is not found.
@@ -148,9 +146,9 @@ async def lookup_policy(policy_number: str) -> dict[str, Any] | None:
         policy_number: The unique policy identifier to look up.
 
     Returns:
-        A dict with keys ``policy_number``, ``holder_name``, ``is_active``,
-        ``coverage_limit``, ``deductible``, ``covered_types``,
-        ``start_date``, ``end_date`` — or ``None`` if not found.
+        A dict with keys ``status``, ``policy_number``, ``is_active``,
+        ``coverage_limit``, ``deductible``, ``covered_claim_types`` —
+        or ``None`` if not found.
     """
     pool = await _get_pool()
     row = await pool.fetchrow(
@@ -160,14 +158,12 @@ async def lookup_policy(policy_number: str) -> dict[str, Any] | None:
     if row is None:
         return None
     return {
+        "status": "success",
         "policy_number": row["policy_number"],
-        "holder_name": row["holder_name"],
         "is_active": row["is_active"],
         "coverage_limit": float(row["coverage_limit"]),
         "deductible": float(row["deductible"]),
-        "covered_types": list(row["covered_types"]),
-        "start_date": row["start_date"].isoformat(),
-        "end_date": row["end_date"].isoformat(),
+        "covered_claim_types": list(row["covered_types"]),
     }
 
 
