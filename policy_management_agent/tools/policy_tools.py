@@ -38,8 +38,9 @@ from typing import Any
 
 import asyncpg
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 # ---------------------------------------------------------------------------
 # Connection pool — lazily initialised, shared across all tool calls
