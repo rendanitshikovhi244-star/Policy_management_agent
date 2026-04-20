@@ -139,7 +139,7 @@ Policy_management_agent/
 
 - Python 3.11+
 - Docker Desktop (or Docker Engine)
-- A [Google AI Studio](https://aistudio.google.com/) API key
+- A [HuggingFace](https://huggingface.co/settings/tokens) API key
 
 ### 1. Start Postgres
 
@@ -151,15 +151,16 @@ docker compose up -d
 
 ```bash
 cp .env.example .env
-# Edit .env and set your GOOGLE_API_KEY
+# Edit .env and set your HUGGINGFACE_API_KEY
 ```
 
 `.env` values:
 
 | Variable | Default | Description |
 |---|---|---|
+| `HUGGINGFACE_API_KEY` | *(required)* | HuggingFace API key |
+| `HF_MODEL` | `huggingface/MiniMaxAI/MiniMax-M2.7` | Model used by all agents |
 | `DATABASE_URL` | `postgresql+asyncpg://insurance_user:insurance_pass@localhost:5432/insurance` | asyncpg connection string |
-| `GOOGLE_API_KEY` | *(required)* | Gemini API key |
 
 ### 3. Install dependencies
 
