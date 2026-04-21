@@ -68,9 +68,53 @@ async def _get_pool() -> asyncpg.Pool:
 # ---------------------------------------------------------------------------
 
 
+async def get_available_plans(coverage_type: str | None = None) -> dict[str, Any]:
+    """Retrieve available insurance plans from the product catalog.
+
+    Call this to show customers what plans are on offer before creating a
+    policy.  Each plan shows the monthly cost, how much the insurer pays out
+    (coverage_limit), and how much the customer covers per claim (deductible).
+
+    Args:
+        coverage_type: Optional filter — one of ``auto``, ``health``, ``home``,
+            ``life``, ``property``, ``liability``.  Omit to return all plans.
+
+    Returns:
+        ``{"status": "success", "plans": [...], "count": int}`` where each
+        plan dict has keys: ``plan_id``, ``coverage_type``, ``plan_name``,
+        ``monthly_premium``, ``coverage_limit``, ``deductible``,
+        ``description``.
+    """
+    pool = await _get_pool()
+    if coverage_type:
+        rows = await pool.fetch(
+            "SELECT * FROM insurance_plans WHERE coverage_type = $1 ORDER BY monthly_premium",
+            coverage_type.lower(),
+        )
+    else:
+        rows = await pool.fetch(
+            "SELECT * FROM insurance_plans ORDER BY coverage_type, monthly_premium"
+        )
+    plans = [
+        {
+            "plan_id":         r["plan_id"],
+            "coverage_type":   r["coverage_type"],
+            "plan_name":       r["plan_name"],
+            "monthly_premium": float(r["monthly_premium"]),
+            "coverage_limit":  float(r["coverage_limit"]),
+            "deductible":      float(r["deductible"]),
+            "description":     r["description"],
+        }
+        for r in rows
+    ]
+    return {"status": "success", "plans": plans, "count": len(plans)}
+
+
 async def create_policy(
     policy_number: str,
     holder_name: str,
+    plan_id: str,
+    monthly_premium: float,
     coverage_limit: float,
     deductible: float,
     covered_types: list[str],
@@ -80,19 +124,20 @@ async def create_policy(
     """Insert a new insurance policy into the database.
 
     Args:
-        policy_number: Unique policy identifier, e.g. ``POL-2024-001``.
+        policy_number: Unique policy identifier, e.g. ``POL-2026-001``.
         holder_name: Full name of the policy holder.
-        coverage_limit: Maximum coverage amount in dollars (must be > 0).
-        deductible: Deductible amount in dollars (must be > 0).
-        covered_types: Non-empty list of coverage categories, e.g.
-            ``["auto", "health"]``.
+        plan_id: The plan chosen from the product catalog, e.g. ``AUTO-STD``.
+        monthly_premium: Monthly cost in dollars (copied from the plan).
+        coverage_limit: Maximum payout per claim in dollars (from the plan).
+        deductible: Customer's out-of-pocket amount per claim (from the plan).
+        covered_types: Coverage categories, e.g. ``["auto"]``.
         start_date: Policy start date in ``YYYY-MM-DD`` format.
         end_date: Policy end date in ``YYYY-MM-DD`` format (must be after
             *start_date*).
 
     Returns:
-        ``{"success": True, "policy_number": policy_number}`` on success, or
-        ``{"success": False, "error": "<message>"}`` on failure.
+        ``{"status": "created", "policy_number": policy_number}`` on success,
+        or ``{"status": "error", "error": "<message>"}`` on failure.
     """
     from datetime import date
 
@@ -100,7 +145,7 @@ async def create_policy(
         start = date.fromisoformat(start_date)
         end = date.fromisoformat(end_date)
     except ValueError as exc:
-        return {"success": False, "error": f"Invalid date format: {exc}"}
+        return {"status": "error", "error": f"Invalid date format: {exc}"}
 
     pool = await _get_pool()
     try:
@@ -108,27 +153,30 @@ async def create_policy(
             """
             INSERT INTO policies (
                 policy_number, holder_name, is_active,
+                plan_id, monthly_premium,
                 coverage_limit, deductible, covered_types,
                 start_date, end_date
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             """,
             policy_number,
             holder_name,
             True,
+            plan_id,
+            monthly_premium,
             coverage_limit,
             deductible,
             covered_types,
             start,
             end,
         )
-        return {"success": True, "policy_number": policy_number}
+        return {"status": "created", "policy_number": policy_number}
     except asyncpg.UniqueViolationError:
         return {
-            "success": False,
+            "status": "error",
             "error": f"Policy '{policy_number}' already exists.",
         }
     except Exception as exc:  # noqa: BLE001
-        return {"success": False, "error": str(exc)}
+        return {"status": "error", "error": str(exc)}
 
 
 # ---------------------------------------------------------------------------

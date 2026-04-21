@@ -1,4 +1,5 @@
 from .models import (
+    InsurancePlan,
     PolicyIntake,
     PolicyRecord,
     PolicyWriteResult,
@@ -7,6 +8,7 @@ from .models import (
 )
 
 __all__ = [
+    "InsurancePlan",
     "PolicyIntake",
     "PolicyRecord",
     "PolicyWriteResult",

@@ -13,7 +13,7 @@ from google.adk.agents import LlmAgent
 
 from ..configs import AGENT_CONFIGS, agent_start_callback
 from ..tools.pipeline_runner_tool import submit_policy
-from ..tools.policy_tools import deactivate_policy, lookup_policy
+from ..tools.policy_tools import deactivate_policy, get_available_plans, lookup_policy
 
 _cfg = AGENT_CONFIGS["PolicyAssistant"]
 
@@ -23,6 +23,7 @@ conversational_agent = LlmAgent(
     description=_cfg.description,
     instruction=_cfg.instruction,
     tools=[
+        get_available_plans,
         submit_policy,
         lookup_policy,
         deactivate_policy,

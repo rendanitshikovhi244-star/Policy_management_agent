@@ -6,6 +6,23 @@ from pydantic import BaseModel, Field
 
 
 # ---------------------------------------------------------------------------
+# Product catalog
+# ---------------------------------------------------------------------------
+
+
+class InsurancePlan(BaseModel):
+    """A single plan from the insurance_plans catalog table."""
+
+    plan_id: str
+    coverage_type: Literal["auto", "health", "home", "life", "property", "liability"]
+    plan_name: str
+    monthly_premium: float = Field(description="Monthly cost in USD")
+    coverage_limit: float  = Field(description="Maximum insurer payout per claim")
+    deductible: float      = Field(description="Customer's out-of-pocket amount per claim")
+    description: str
+
+
+# ---------------------------------------------------------------------------
 # Input
 # ---------------------------------------------------------------------------
 
@@ -13,15 +30,11 @@ from pydantic import BaseModel, Field
 class PolicyIntake(BaseModel):
     """Structured policy data produced by IntakeAgent."""
 
-    policy_number: str = Field(description="Unique policy identifier, e.g. POL-2026-001")
-    holder_name: str = Field(description="Full legal name of the policy holder")
-    coverage_limit: float = Field(description="Maximum payout in USD", gt=0)
-    deductible: float = Field(description="Deductible amount in USD", gt=0)
-    covered_types: List[
-        Literal["auto", "health", "home", "life", "property", "liability"]
-    ] = Field(description="Coverage categories")
-    start_date: str = Field(description="Policy start date in YYYY-MM-DD format")
-    end_date: str = Field(description="Policy end date in YYYY-MM-DD format")
+    policy_number: str   = Field(description="Unique policy identifier, e.g. POL-2026-001")
+    holder_name: str     = Field(description="Full legal name of the policy holder")
+    plan_id: str         = Field(description="Plan chosen from catalog, e.g. AUTO-STD")
+    start_date: str      = Field(description="Policy start date in YYYY-MM-DD format")
+    end_date: str        = Field(description="Policy end date in YYYY-MM-DD format")
 
 
 # ---------------------------------------------------------------------------
@@ -39,13 +52,15 @@ class ValidationResult(BaseModel):
 
     verdict: Literal["VALID", "INVALID"]
     # Present when verdict == "VALID"
-    policy_number: Optional[str] = None
-    holder_name: Optional[str] = None
-    coverage_limit: Optional[float] = None
-    deductible: Optional[float] = None
+    policy_number: Optional[str]   = None
+    holder_name: Optional[str]     = None
+    plan_id: Optional[str]         = None
+    monthly_premium: Optional[float] = None
+    coverage_limit: Optional[float]  = None
+    deductible: Optional[float]      = None
     covered_types: Optional[List[str]] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    start_date: Optional[str]       = None
+    end_date: Optional[str]         = None
     # Present when verdict == "INVALID"
     errors: Optional[List[ValidationError]] = None
 
