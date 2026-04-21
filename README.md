@@ -289,6 +289,59 @@ adk run policy_management_agent
 
 # Browser UI at http://localhost:8000
 adk web
+
+# REST API at http://localhost:8080
+uvicorn api.app:app --reload --port 8080
+```
+
+---
+
+## REST API
+
+The FastAPI application lives in `api/app.py` and exposes the same policy operations as REST endpoints. Interactive docs are available at `http://localhost:8080/docs` when the server is running.
+
+### Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/plans` | List all plans; filter with `?coverage_type=auto` |
+| `GET` | `/plans/{plan_id}` | Get a single plan by ID |
+| `POST` | `/policies` | Create a policy via the full agent pipeline |
+| `GET` | `/policies/{policy_number}` | Look up a policy |
+| `DELETE` | `/policies/{policy_number}` | Deactivate a policy |
+
+### Examples
+
+**List auto plans**
+```bash
+curl http://localhost:8080/plans?coverage_type=auto
+```
+
+**Create a policy**
+```bash
+curl -X POST http://localhost:8080/policies \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Create an AUTO-STD policy for Jane Smith from 2026-05-01 to 2027-05-01"}'
+```
+
+Response:
+```json
+{
+  "status": "created",
+  "policy_number": "POL-2026-001",
+  "error": null,
+  "session_state": { ... }
+}
+```
+
+**Look up a policy**
+```bash
+curl http://localhost:8080/policies/POL-2026-001
+```
+
+**Deactivate a policy**
+```bash
+curl -X DELETE http://localhost:8080/policies/POL-2026-001
 ```
 
 ---
